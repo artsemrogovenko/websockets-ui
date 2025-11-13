@@ -1,10 +1,9 @@
 import type { UpdateWinners, Winner } from './types.ts';
-import WebSocket from 'ws';
-import { sendResponse } from './utils.ts';
+import { notifyAll } from './store.ts';
 
 const winners = new Map<string, number>();
 
-export function sendWinnersList(socket: WebSocket) {
+export function sendWinnersList() {
   const result: Winner[] = [...winners.entries()].map(([name, wins]) => {
     return { name: name, wins: wins };
   });
@@ -13,5 +12,5 @@ export function sendWinnersList(socket: WebSocket) {
     data: result,
     id: 0,
   };
-  sendResponse(response, socket);
+  notifyAll(response);
 }

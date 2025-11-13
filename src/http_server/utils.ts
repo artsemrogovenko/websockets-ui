@@ -45,14 +45,14 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     case 'create_room':
       MessageCases.create_room(parsed as MyTypes.CreateRoom, socket);
       break;
-    // case 'add_user_to_room':
-    //   MessageCases.reg(parsed as MyTypes.InviteRoom, socket);
-    //   break;
+    case 'add_user_to_room':
+      MessageCases.add_user_to_room(parsed as MyTypes.InviteRoom, socket);
+      break;
     // case 'create_game':
-    //   MessageCases.reg(parsed as MyTypes.CreateGame, socket);
+    //   MessageCases.create_game(parsed as MyTypes.CreateGame, socket);
     //   break;
     // case 'update_room':
-    //   MessageCases.reg(parsed as MyTypes.UpdateRoom, socket);
+    //   MessageCases.update_room(parsed as MyTypes.UpdateRoom, socket);
     //   break;
     // case 'start_game':
     //   MessageCases.reg(parsed as MyTypes.StartGame, socket);

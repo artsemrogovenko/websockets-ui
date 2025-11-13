@@ -93,14 +93,14 @@ export type RoomUser = {
   name: string;
   index: number | string;
 };
-export type Rooms = {
+export type Room = {
   roomId: number | string;
   roomUsers: RoomUser[];
 };
 
 export interface UpdateRoom extends BaseMessage {
   type: 'update_room';
-  data: Rooms[];
+  data: Room[];
 }
 
 export interface AddShips extends BaseMessage {

@@ -1,5 +1,11 @@
 import { sendRoomsList } from './rooms.ts';
-import type { Auth, BaseMessage, Login, RoomUser } from './types';
+import type {
+  Auth,
+  BaseMessage,
+  Login,
+  ObjectMessage,
+  RoomUser,
+} from './types';
 import { sendResponse } from './utils.ts';
 import WebSocket from 'ws';
 import { sendWinnersList } from './winners.ts';
@@ -73,8 +79,8 @@ function signOut(name: string) {
 function signIn(name: string, password: string, socket: WebSocket) {
   logins.set(name, { isOnline: true, password: password });
   sockets.set(name, socket);
-  sendRoomsList(socket);
-  sendWinnersList(socket);
+  sendRoomsList();
+  sendWinnersList();
 }
 
 export function getNameBySocket(ws: WebSocket): RoomUser | null {
@@ -84,4 +90,14 @@ export function getNameBySocket(ws: WebSocket): RoomUser | null {
     }
   }
   return null;
+}
+
+export async function notifyAll(message: ObjectMessage) {
+  for (const element of sockets.values()) {
+    sendResponse(message, element);
+  }
+}
+
+export function getSocketByName(name: string) {
+  return sockets.get(name);
 }
