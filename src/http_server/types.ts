@@ -103,21 +103,27 @@ export interface UpdateRoom extends BaseMessage {
   data: Room[];
 }
 
+export type Ship = {
+  position: {
+    x: number;
+    y: number;
+  };
+  direction: boolean;
+  length: number;
+  type: 'small' | 'medium' | 'large' | 'huge';
+};
+
+export type GameArea = Array<{
+  username: string;
+  indexPlayer: string | number;
+  ships: Ship[];
+}>;
+
 export interface AddShips extends BaseMessage {
   type: 'add_ships';
   data: {
     gameId: number | string;
-    ships: [
-      {
-        position: {
-          x: number;
-          y: number;
-        };
-        direction: boolean;
-        length: number;
-        type: 'small' | 'medium' | 'large' | 'huge';
-      },
-    ];
+    ships: Ship[];
     indexPlayer:
       | number
       | string /* id of the player in the current game session */;
@@ -126,18 +132,7 @@ export interface AddShips extends BaseMessage {
 export interface StartGame extends BaseMessage {
   type: 'start_game';
   data: {
-    ships: /* player's ships, not enemy's */
-    [
-      {
-        position: {
-          x: number;
-          y: number;
-        };
-        direction: boolean;
-        length: number;
-        type: 'small' | 'medium' | 'large' | 'huge';
-      },
-    ];
+    ships: Ship[] /* player's ships, not enemy's */;
     currentPlayerIndex:
       | number
       | string /* id of the player in the current game session, who have sent his ships */;

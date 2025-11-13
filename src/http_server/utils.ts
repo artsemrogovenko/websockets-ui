@@ -1,6 +1,7 @@
 import WebSocket, { type RawData } from 'ws';
 import * as MyTypes from './types.ts';
 import { MessageCases } from './switcher.ts';
+import { v4 as uuidv4 } from 'uuid';
 
 function isMessageType(obj: unknown): obj is MyTypes.RawMessage {
   return (
@@ -57,9 +58,9 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     // case 'start_game':
     //   MessageCases.reg(parsed as MyTypes.StartGame, socket);
     //   break;
-    // case 'add_ships':
-    //   MessageCases.reg(parsed as MyTypes.AddShips, socket);
-    //   break;
+    case 'add_ships':
+      MessageCases.add_ships(parsed as MyTypes.AddShips, socket);
+      break;
     // case 'attack':
     //   MessageCases.reg(
     //     parsed as MyTypes.Attack | MyTypes.AttackFeedback,
@@ -94,4 +95,8 @@ export function stringify(message: MyTypes.BaseMessage): string {
 export function sendResponse(message: MyTypes.BaseMessage, socket: WebSocket) {
   const response = stringify(message);
   socket.send(response);
+}
+
+export function generateUuid() {
+  return uuidv4();
 }

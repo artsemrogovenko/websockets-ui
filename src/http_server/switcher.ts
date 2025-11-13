@@ -1,3 +1,4 @@
+import { handleShipsPosition } from './game.ts';
 import { createRoom, inviteRoom } from './rooms.ts';
 import { login } from './store.ts';
 import * as MyTypes from './types.ts';
@@ -33,7 +34,9 @@ export const MessageCases: {
   },
   create_game: () => {},
   update_room: () => {},
-  add_ships: () => {},
+  add_ships: (data: MyTypes.AddShips, socket: WebSocket) => {
+    handleShipsPosition(data, socket);
+  },
   start_game: () => {},
   attack: () => {},
   randomAttack: () => {},

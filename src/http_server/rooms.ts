@@ -1,12 +1,8 @@
-import type {
-  CreateRoom,
-  InviteRoom,
-  Room,
-  UpdateRoom,
-} from './types.ts';
+import type { CreateRoom, InviteRoom, Room, UpdateRoom } from './types.ts';
 import WebSocket from 'ws';
 import { getNameBySocket, notifyAll } from './store.ts';
 import { createGame } from './game.ts';
+import { generateUuid } from './utils.ts';
 
 const rooms = new Map<string, Room>();
 let counter = 0;
@@ -47,8 +43,9 @@ function enterRoom(roomId: number | string, socket: WebSocket) {
   const usersInRoom = rooms.get(key);
 
   if (usersInRoom && usersInRoom.roomUsers.length > 1) {
+    const idGame = generateUuid();
     const usernames = usersInRoom.roomUsers;
-    usernames.forEach((user) => createGame(user));
+    usernames.forEach((user) => createGame(user, idGame));
   }
 }
 
