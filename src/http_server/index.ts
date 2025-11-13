@@ -2,14 +2,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
 
-import WebSocket, { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer, type RawData } from 'ws';
 import { handleMessage } from './utils.ts';
 
 export const wss = new WebSocketServer({ port: 3000 });
 
 wss.on('connection', (ws: WebSocket) => {
-  ws.on('message', (data) => {
+  ws.on('message', (data: RawData) => {
     handleMessage(data, ws);
+  });
+  ws.on('close', (code: number, reason: Buffer) => {
+    console.log(code, reason.toString());
   });
 });
 

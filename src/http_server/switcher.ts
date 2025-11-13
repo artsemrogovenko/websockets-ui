@@ -1,3 +1,4 @@
+import { createRoom } from './rooms.ts';
 import { login } from './store.ts';
 import * as MyTypes from './types.ts';
 import WebSocket from 'ws';
@@ -25,7 +26,8 @@ export const MessageCases: {
     login(data, socket);
   },
   update_winners: () => {},
-  create_room: () => {},
+  create_room: (data: MyTypes.CreateRoom, socket: WebSocket) =>
+    createRoom(data, socket),
   add_user_to_room: () => {},
   create_game: () => {},
   update_room: () => {},

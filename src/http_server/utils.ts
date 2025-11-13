@@ -42,9 +42,9 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     // case 'update_winners':
     //   MessageCases.reg(parsed as MyTypes.UpdateWinners, socket);
     //   break;
-    // case 'create_room':
-    //   MessageCases.reg(parsed as MyTypes.CreateRoom, socket);
-    //   break;
+    case 'create_room':
+      MessageCases.create_room(parsed as MyTypes.CreateRoom, socket);
+      break;
     // case 'add_user_to_room':
     //   MessageCases.reg(parsed as MyTypes.InviteRoom, socket);
     //   break;
