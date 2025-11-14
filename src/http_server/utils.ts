@@ -63,7 +63,7 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
       MessageCases.add_ships(parsed as MyTypes.AddShips, socket);
       break;
     case 'attack':
-      MessageCases.attack(parsed as MyTypes.Attack, socket);
+      MessageCases.attack(parsed as MyTypes.Attack);
       break;
     case 'randomAttack':
       MessageCases.randomAttack(parsed as MyTypes.RandomAttack, socket);
@@ -123,12 +123,16 @@ function computePoints(ship: Ship) {
   points.push(JSON.stringify(position) as string);
 
   if (ship.direction) {
-    for (let index = position.y; index < ship.length; index++) {
-      points.push(JSON.stringify({ x: index, y: position.y }) as string);
+    for (let index = 0; index < ship.length; index++) {
+      points.push(
+        JSON.stringify({ x: position.x, y: position.y + index }) as string,
+      );
     }
   } else {
-    for (let index = position.x; index < ship.length; index++) {
-      points.push(JSON.stringify({ x: position.x, y: index }) as string);
+    for (let index = 0; index < ship.length; index++) {
+      points.push(
+        JSON.stringify({ x: position.x + index, y: position.y }) as string,
+      );
     }
   }
   return { isKilled: false, coordinates: points };

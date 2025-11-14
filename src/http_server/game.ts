@@ -54,11 +54,6 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
     ...(shipsPositions.get(gameId) || []),
     makeCoordinates(request),
   ]);
-  shipsPositions
-    .values()
-    .next()
-    .value?.pop()
-    ?.positions.forEach((val) => console.log(val.coordinates));
 
   if (!whoIsShooting[gameId]) {
     whoIsShooting[gameId] = [];

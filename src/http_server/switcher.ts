@@ -18,7 +18,7 @@ export const MessageCases: {
   update_room: MessageHandler<MyTypes.UpdateRoom>;
   add_ships: MessageHandler<MyTypes.AddShips>;
   start_game: MessageHandler<MyTypes.StartGame>;
-  attack: MessageHandler<MyTypes.Attack>;
+  attack: (data: MyTypes.Attack) => void;
   randomAttack: MessageHandler<MyTypes.RandomAttack>;
   turn: MessageHandler<MyTypes.PlayerTurn>;
   finish: MessageHandler<MyTypes.FinishGame>;
@@ -38,7 +38,7 @@ export const MessageCases: {
     handleShipsPosition(data, socket);
   },
   start_game: () => {},
-  attack: (data: MyTypes.Attack, _: WebSocket) => {
+  attack: (data: MyTypes.Attack) => {
     handleAttack(data);
   },
   randomAttack: (data: MyTypes.RandomAttack) => {
