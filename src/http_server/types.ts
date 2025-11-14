@@ -103,14 +103,25 @@ export interface UpdateRoom extends BaseMessage {
   data: Room[];
 }
 
+export type Position = {
+  x: number;
+  y: number;
+};
+
 export type Ship = {
-  position: {
-    x: number;
-    y: number;
-  };
+  position: Position;
   direction: boolean;
   length: number;
   type: 'small' | 'medium' | 'large' | 'huge';
+};
+
+export type ShipPosition = {
+  isKilled: boolean;
+  coordinates: string[];
+};
+export type UserShips = {
+  userId: string | number;
+  positions: ShipPosition[];
 };
 
 export type GameArea = Array<{
@@ -149,17 +160,15 @@ export interface Attack extends BaseMessage {
       | string /* id of the player in the current game session */;
   };
 }
+export type FeedbackStaus = 'miss' | 'killed' | 'shot';
 export interface AttackFeedback extends BaseMessage {
   type: 'attack';
   data: {
-    position: {
-      x: number;
-      y: number;
-    };
+    position: Position;
     currentPlayer:
       | number
       | string /* id of the player in the current game session */;
-    status: 'miss' | 'killed' | 'shot';
+    status: FeedbackStaus;
   };
 }
 export interface RandomAttack extends BaseMessage {

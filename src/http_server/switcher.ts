@@ -1,4 +1,4 @@
-import { doRandomAttack, handleShipsPosition } from './game.ts';
+import { doRandomAttack, handleAttack, handleShipsPosition } from './game.ts';
 import { createRoom, inviteRoom } from './rooms.ts';
 import { login } from './store.ts';
 import * as MyTypes from './types.ts';
@@ -18,7 +18,7 @@ export const MessageCases: {
   update_room: MessageHandler<MyTypes.UpdateRoom>;
   add_ships: MessageHandler<MyTypes.AddShips>;
   start_game: MessageHandler<MyTypes.StartGame>;
-  attack: MessageHandler<MyTypes.Attack | MyTypes.AttackFeedback>;
+  attack: MessageHandler<MyTypes.Attack>;
   randomAttack: MessageHandler<MyTypes.RandomAttack>;
   turn: MessageHandler<MyTypes.PlayerTurn>;
   finish: MessageHandler<MyTypes.FinishGame>;
@@ -38,7 +38,9 @@ export const MessageCases: {
     handleShipsPosition(data, socket);
   },
   start_game: () => {},
-  attack: () => {},
+  attack: (data: MyTypes.Attack, _: WebSocket) => {
+    handleAttack(data);
+  },
   randomAttack: (data: MyTypes.RandomAttack) => {
     doRandomAttack(data);
   },

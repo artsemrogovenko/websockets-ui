@@ -2,6 +2,7 @@ import WebSocket, { type RawData } from 'ws';
 import * as MyTypes from './types.ts';
 import { MessageCases } from './switcher.ts';
 import { v4 as uuidv4 } from 'uuid';
+import type { AddShips, Ship, UserShips } from './types.ts';
 
 function isMessageType(obj: unknown): obj is MyTypes.RawMessage {
   return (
@@ -21,7 +22,7 @@ function parser(data: RawData): MyTypes.ObjectMessage {
   if (!isMessageType(parsed)) {
     throw Error('Invalid format message');
   }
-  console.log(parsed);
+  // console.log(parsed);
   return {
     type: parsed.type,
     data: parsed.data ? JSON.parse(parsed.data) : parsed.data,
@@ -61,12 +62,9 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     case 'add_ships':
       MessageCases.add_ships(parsed as MyTypes.AddShips, socket);
       break;
-    // case 'attack':
-    //   MessageCases.reg(
-    //     parsed as MyTypes.Attack | MyTypes.AttackFeedback,
-    //     socket,
-    //   );
-    //   break;
+    case 'attack':
+      MessageCases.attack(parsed as MyTypes.Attack, socket);
+      break;
     case 'randomAttack':
       MessageCases.randomAttack(parsed as MyTypes.RandomAttack, socket);
       break;
@@ -101,6 +99,37 @@ export function generateUuid() {
   return uuidv4();
 }
 
-export function getRandomDigit(): number {
+export function getRandomDigit() {
   return Math.floor(Math.random() * 10);
+}
+
+export function makeCoordinates(userGrid: AddShips): UserShips {
+  const data = userGrid.data;
+  const ships = data.ships;
+
+  const result: UserShips = {
+    userId: data.indexPlayer,
+    positions: [],
+  };
+  ships.forEach((s) => {
+    result.positions.push(computePoints(s));
+  });
+  return result;
+}
+
+function computePoints(ship: Ship) {
+  const points: string[] = [];
+  const position = ship.position;
+  points.push(JSON.stringify(position) as string);
+
+  if (ship.direction) {
+    for (let index = position.y; index < ship.length; index++) {
+      points.push(JSON.stringify({ x: index, y: position.y }) as string);
+    }
+  } else {
+    for (let index = position.x; index < ship.length; index++) {
+      points.push(JSON.stringify({ x: position.x, y: index }) as string);
+    }
+  }
+  return { isKilled: false, coordinates: points };
 }

@@ -7,14 +7,26 @@ import type {
   PlayerTurn,
   RandomAttack,
   RoomUser,
+  UserShips,
   StartGame,
+  ShipPosition,
+  Attack,
+  AttackFeedback,
+  Position,
+  FeedbackStaus,
 } from './types.ts';
 import WebSocket from 'ws';
-import { generateUuid, getRandomDigit, sendResponse } from './utils.ts';
+import {
+  generateUuid,
+  getRandomDigit,
+  makeCoordinates,
+  sendResponse,
+} from './utils.ts';
 import { notifyRoom } from './rooms.ts';
 
 const games = new Map<string | number, GameArea>(); // key = gameid value= { indexPlayer, ships }
 const whoIsShooting: Record<string | number, IsShooting[]> = {}; // gameId , players
+const shipsPositions = new Map<string | number, UserShips[]>(); // gameid , ships
 
 export function createGame(user: RoomUser, gameId: string) {
   const socket = getSocketByName(user.name);
@@ -37,6 +49,16 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
   const { data } = request;
   const { gameId, indexPlayer, ships } = data;
   const _username = getNameBySocket(socket)?.name || '';
+
+  shipsPositions.set(gameId, [
+    ...(shipsPositions.get(gameId) || []),
+    makeCoordinates(request),
+  ]);
+  shipsPositions
+    .values()
+    .next()
+    .value?.pop()
+    ?.positions.forEach((val) => console.log(val.coordinates));
 
   if (!whoIsShooting[gameId]) {
     whoIsShooting[gameId] = [];
@@ -76,16 +98,20 @@ function startGame(gameId: string | number, gameArea: GameArea) {
       sendResponse(response, socket);
     }
     if (index === array.length - 1) {
-      turnPlayer(p.indexPlayer, gameId, gameArea);
+      turnPlayer(p.indexPlayer, gameId);
     }
   });
 }
 
-function turnPlayer(
-  indexPlayer: string | number,
-  gameId: string | number,
-  game: GameArea,
-) {
+function getGameAreaOnIndex(indexPlayer: string | number) {
+  return [...games.values()]
+    .filter((gameArea) => {
+      return gameArea.some((user) => user.indexPlayer === indexPlayer);
+    })
+    .pop();
+}
+
+function turnPlayer(indexPlayer: string | number, gameId: string | number) {
   const players = whoIsShooting[gameId];
   whoIsShooting[gameId] = players.map((player) => {
     player.thutly = player.indexPlayer === indexPlayer;
@@ -97,10 +123,9 @@ function turnPlayer(
     data: { currentPlayer: indexPlayer },
     id: 0,
   };
-  const names = game.flatMap((gameArea) => {
-    return gameArea.username;
-  });
-  notifyRoom(names, response);
+  const game = getGameAreaOnIndex(indexPlayer);
+  const names = game?.flatMap((gameArea) => gameArea.username);
+  if (names) notifyRoom(names, response);
 }
 
 export function doRandomAttack(request: RandomAttack) {
@@ -114,15 +139,37 @@ export function doRandomAttack(request: RandomAttack) {
 
   const x = getRandomDigit();
   const y = getRandomDigit();
-  if (enemyId) makeAttack(x, y, enemyId, gameid);
+  if (enemyId) makeAttack(x, y, enemyId, attackerId, gameid);
+}
+
+export function handleAttack(request: Attack) {
+  const { data } = request;
+  const attackerId = data.indexPlayer;
+  const gameid = data.gameId;
+
+  const enemyId = whoIsShooting[gameid]
+    .filter((id) => id.indexPlayer !== attackerId)
+    .pop()?.indexPlayer;
+
+  const x = data.x;
+  const y = data.y;
+  if (enemyId) makeAttack(x, y, enemyId, attackerId, gameid);
 }
 
 function makeAttack(
   x: number,
   y: number,
   enemyId: string | number,
+  attackerId: string | number,
   gameid: string | number,
 ) {
+  const isShooting = whoIsShooting[gameid].filter((value) => {
+    return value.indexPlayer === attackerId && value.thutly;
+  });
+  if (!isShooting.length) {
+    return;
+  }
+
   const area = games.get(gameid);
   if (area) {
     const enemy = area
@@ -131,7 +178,43 @@ function makeAttack(
       })
       .pop();
     if (enemy) {
-      // const socket = getSocketByName(enemy.username);
+      const roomShips = shipsPositions.get(gameid);
+      const positions = roomShips
+        ?.filter((value) => value.userId === enemyId)
+        .pop()?.positions;
+
+      if (positions) {
+        const target = { x, y };
+        if (isHit(JSON.stringify(target), positions)) {
+          feedback(attackerId, target, 'shot');
+          turnPlayer(attackerId, gameid);
+        } else {
+          feedback(attackerId, target, 'miss');
+          turnPlayer(enemyId, gameid);
+        }
+      }
     }
   }
+}
+
+function isHit(point: string, positions: ShipPosition[]) {
+  return positions.some((value) => {
+    return value.coordinates.some((coordinate) => coordinate.includes(point));
+  });
+}
+
+function feedback(
+  currentPlayer: string | number,
+  position: Position,
+  status: FeedbackStaus,
+) {
+  const response: AttackFeedback = {
+    type: 'attack',
+    data: { currentPlayer: currentPlayer, position: position, status: status },
+    id: 0,
+  };
+  const names = getGameAreaOnIndex(currentPlayer)?.flatMap(
+    (user) => user.username,
+  );
+  if (names) notifyRoom(names, response);
 }

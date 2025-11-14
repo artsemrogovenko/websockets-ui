@@ -73,10 +73,14 @@ function findRoomOwner(names: string[]) {
 export function notifyRoom(names: string[], message: ObjectMessage) {
   const owner = findRoomOwner(names);
   if (owner) {
-    const room = rooms.get(owner);
-    room?.roomUsers.forEach((user) => {
-      const socket = getSocketByName(user.name);
-      if (socket) sendResponse(message, socket);
-    });
+    notifyRoomByOwnerName(owner, message);
   }
+}
+
+export function notifyRoomByOwnerName(owner: string, message: ObjectMessage) {
+  const room = rooms.get(owner);
+  room?.roomUsers.forEach((user) => {
+    const socket = getSocketByName(user.name);
+    if (socket) sendResponse(message, socket);
+  });
 }
