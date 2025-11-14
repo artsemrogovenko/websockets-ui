@@ -1,8 +1,14 @@
-import type { CreateRoom, InviteRoom, Room, UpdateRoom } from './types.ts';
+import type {
+  CreateRoom,
+  InviteRoom,
+  ObjectMessage,
+  Room,
+  UpdateRoom,
+} from './types.ts';
 import WebSocket from 'ws';
-import { getNameBySocket, notifyAll } from './store.ts';
+import { getNameBySocket, getSocketByName, notifyAll } from './store.ts';
 import { createGame } from './game.ts';
-import { generateUuid } from './utils.ts';
+import { generateUuid, sendResponse } from './utils.ts';
 
 const rooms = new Map<string, Room>();
 let counter = 0;
@@ -30,6 +36,7 @@ function enterRoom(roomId: number | string, socket: WebSocket) {
   const user = getNameBySocket(socket);
   let key = '';
   if (user) {
+    rooms.delete(user.name);
     for (const [owner, room] of rooms.entries()) {
       if (roomId === room.roomId) {
         if (owner !== user.name) {
@@ -52,4 +59,24 @@ function enterRoom(roomId: number | string, socket: WebSocket) {
 export function inviteRoom(request: InviteRoom, socket: WebSocket) {
   const roomId = request.data.indexRoom;
   enterRoom(roomId, socket);
+}
+
+function findRoomOwner(names: string[]) {
+  const owners = [...rooms.keys()];
+  return owners
+    .filter((ownerName) => {
+      return ownerName === names[0] || ownerName === names[1];
+    })
+    .pop();
+}
+
+export function notifyRoom(names: string[], message: ObjectMessage) {
+  const owner = findRoomOwner(names);
+  if (owner) {
+    const room = rooms.get(owner);
+    room?.roomUsers.forEach((user) => {
+      const socket = getSocketByName(user.name);
+      if (socket) sendResponse(message, socket);
+    });
+  }
 }

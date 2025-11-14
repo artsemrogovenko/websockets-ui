@@ -3,13 +3,18 @@ import type {
   AddShips,
   CreateGame,
   GameArea,
+  IsShooting,
+  PlayerTurn,
+  RandomAttack,
   RoomUser,
   StartGame,
 } from './types.ts';
 import WebSocket from 'ws';
-import { generateUuid, sendResponse } from './utils.ts';
+import { generateUuid, getRandomDigit, sendResponse } from './utils.ts';
+import { notifyRoom } from './rooms.ts';
 
 const games = new Map<string | number, GameArea>(); // key = gameid value= { indexPlayer, ships }
+const whoIsShooting: Record<string | number, IsShooting[]> = {}; // gameId , players
 
 export function createGame(user: RoomUser, gameId: string) {
   const socket = getSocketByName(user.name);
@@ -33,6 +38,14 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
   const { gameId, indexPlayer, ships } = data;
   const _username = getNameBySocket(socket)?.name || '';
 
+  if (!whoIsShooting[gameId]) {
+    whoIsShooting[gameId] = [];
+  }
+  whoIsShooting[gameId.toString()].push({
+    indexPlayer: indexPlayer,
+    thutly: false,
+  });
+
   const gameRoom = games.get(gameId);
   if (gameRoom) {
     games.set(gameId, [
@@ -42,7 +55,7 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
 
     const gameArea = games.get(gameId);
     if (gameArea && gameArea.length > 1) {
-      startGame(gameArea);
+      startGame(gameId, gameArea);
     }
   } else {
     games.set(gameId, [
@@ -51,8 +64,8 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
   }
 }
 
-function startGame(players: GameArea) {
-  players.forEach((p) => {
+function startGame(gameId: string | number, gameArea: GameArea) {
+  gameArea.forEach((p, index, array) => {
     const response: StartGame = {
       data: { currentPlayerIndex: p.indexPlayer, ships: p.ships },
       id: 0,
@@ -62,5 +75,63 @@ function startGame(players: GameArea) {
     if (socket) {
       sendResponse(response, socket);
     }
+    if (index === array.length - 1) {
+      turnPlayer(p.indexPlayer, gameId, gameArea);
+    }
   });
+}
+
+function turnPlayer(
+  indexPlayer: string | number,
+  gameId: string | number,
+  game: GameArea,
+) {
+  const players = whoIsShooting[gameId];
+  whoIsShooting[gameId] = players.map((player) => {
+    player.thutly = player.indexPlayer === indexPlayer;
+    return player;
+  });
+
+  const response: PlayerTurn = {
+    type: 'turn',
+    data: { currentPlayer: indexPlayer },
+    id: 0,
+  };
+  const names = game.flatMap((gameArea) => {
+    return gameArea.username;
+  });
+  notifyRoom(names, response);
+}
+
+export function doRandomAttack(request: RandomAttack) {
+  const { data } = request;
+  const attackerId = data.indexPlayer;
+  const gameid = data.gameId;
+
+  const enemyId = whoIsShooting[gameid]
+    .filter((id) => id.indexPlayer !== attackerId)
+    .pop()?.indexPlayer;
+
+  const x = getRandomDigit();
+  const y = getRandomDigit();
+  if (enemyId) makeAttack(x, y, enemyId, gameid);
+}
+
+function makeAttack(
+  x: number,
+  y: number,
+  enemyId: string | number,
+  gameid: string | number,
+) {
+  const area = games.get(gameid);
+  if (area) {
+    const enemy = area
+      .filter((value) => {
+        return value.indexPlayer === enemyId;
+      })
+      .pop();
+    if (enemy) {
+      // const socket = getSocketByName(enemy.username);
+    }
+  }
 }

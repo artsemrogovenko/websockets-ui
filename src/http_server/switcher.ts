@@ -1,4 +1,4 @@
-import { handleShipsPosition } from './game.ts';
+import { doRandomAttack, handleShipsPosition } from './game.ts';
 import { createRoom, inviteRoom } from './rooms.ts';
 import { login } from './store.ts';
 import * as MyTypes from './types.ts';
@@ -39,7 +39,9 @@ export const MessageCases: {
   },
   start_game: () => {},
   attack: () => {},
-  randomAttack: () => {},
+  randomAttack: (data: MyTypes.RandomAttack) => {
+    doRandomAttack(data);
+  },
   turn: () => {},
   finish: () => {},
 };

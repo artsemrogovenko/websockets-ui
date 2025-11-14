@@ -188,3 +188,8 @@ export interface FinishGame extends BaseMessage {
       | string /* id of the player in the current game session */;
   };
 }
+
+export type IsShooting = {
+  indexPlayer: string | number;
+  thutly: boolean;
+};

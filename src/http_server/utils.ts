@@ -67,9 +67,9 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     //     socket,
     //   );
     //   break;
-    // case 'randomAttack':
-    //   MessageCases.reg(parsed as MyTypes.RandomAttack, socket);
-    //   break;
+    case 'randomAttack':
+      MessageCases.randomAttack(parsed as MyTypes.RandomAttack, socket);
+      break;
     // case 'turn':
     //   MessageCases.reg(parsed as MyTypes.PlayerTurn, socket);
     //   break;
@@ -99,4 +99,8 @@ export function sendResponse(message: MyTypes.BaseMessage, socket: WebSocket) {
 
 export function generateUuid() {
   return uuidv4();
+}
+
+export function getRandomDigit(): number {
+  return Math.floor(Math.random() * 10);
 }
