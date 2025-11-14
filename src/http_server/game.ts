@@ -180,8 +180,19 @@ function makeAttack(
 
       if (positions) {
         const target = { x, y };
-        if (isHit(JSON.stringify(target), positions)) {
+        const { found, destroyed } = isHit(
+          JSON.stringify(target),
+          positions,
+          updateShips(gameid, enemyId),
+        );
+        if (found) {
           feedback(attackerId, target, 'shot');
+          if (destroyed) {
+            // destroyed.coordinates.forEach((c) => {
+            //   feedback(attackerId, JSON.parse(c.coordinate), 'killed');
+            // });
+            feedback(attackerId, target, 'killed');
+          }
           turnPlayer(attackerId, gameid);
         } else {
           feedback(attackerId, target, 'miss');
@@ -192,10 +203,52 @@ function makeAttack(
   }
 }
 
-function isHit(point: string, positions: ShipPosition[]) {
-  return positions.some((value) => {
-    return value.coordinates.some((coordinate) => coordinate.includes(point));
+function updateShips(gameId: string | number, userId: string | number) {
+  return (ships: ShipPosition[]) => {
+    const users = shipsPositions.get(gameId);
+    if (users) {
+      shipsPositions.set(
+        gameId,
+        users?.map((user) => {
+          if (user.userId === userId) {
+            user.positions = ships;
+          }
+          return user;
+        }),
+      );
+    }
+  };
+}
+
+type CheckResult = {
+  found: boolean;
+  destroyed: ShipPosition | null;
+};
+
+function isHit(
+  point: string,
+  positions: ShipPosition[],
+  updater: ReturnType<typeof updateShips>,
+) {
+  const result: CheckResult = { found: false, destroyed: null };
+  const updated: ShipPosition[] = [...positions].map((value) => {
+    value.coordinates = value.coordinates.map((c) => {
+      if (c.coordinate.includes(point)) {
+        result.found = true;
+        c.breaked = true;
+      }
+      return c;
+    });
+
+    if (value.coordinates.every((c) => c.breaked)) {
+      value.isKilled = true;
+      result.destroyed = value;
+    }
+    return value;
   });
+  updater(updated);
+
+  return result;
 }
 
 function feedback(

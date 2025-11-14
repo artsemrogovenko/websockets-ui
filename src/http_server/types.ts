@@ -115,9 +115,13 @@ export type Ship = {
   type: 'small' | 'medium' | 'large' | 'huge';
 };
 
+export type CoordinateState = {
+  coordinate: string;
+  breaked: boolean;
+};
 export type ShipPosition = {
   isKilled: boolean;
-  coordinates: string[];
+  coordinates: CoordinateState[];
 };
 export type UserShips = {
   userId: string | number;

@@ -2,7 +2,7 @@ import WebSocket, { type RawData } from 'ws';
 import * as MyTypes from './types.ts';
 import { MessageCases } from './switcher.ts';
 import { v4 as uuidv4 } from 'uuid';
-import type { AddShips, Ship, UserShips } from './types.ts';
+import type { AddShips, CoordinateState, Ship, UserShips } from './types.ts';
 
 function isMessageType(obj: unknown): obj is MyTypes.RawMessage {
   return (
@@ -118,22 +118,21 @@ export function makeCoordinates(userGrid: AddShips): UserShips {
 }
 
 function computePoints(ship: Ship) {
-  const points: string[] = [];
+  const points: CoordinateState[] = [];
   const position = ship.position;
-  points.push(JSON.stringify(position) as string);
 
   if (ship.direction) {
     for (let index = 0; index < ship.length; index++) {
-      points.push(
-        JSON.stringify({ x: position.x, y: position.y + index }) as string,
-      );
+      points.push(packing({ x: position.x, y: position.y + index }));
     }
   } else {
     for (let index = 0; index < ship.length; index++) {
-      points.push(
-        JSON.stringify({ x: position.x + index, y: position.y }) as string,
-      );
+      points.push(packing({ x: position.x + index, y: position.y }));
     }
   }
   return { isKilled: false, coordinates: points };
+}
+
+function packing(value: object): CoordinateState {
+  return { breaked: false, coordinate: JSON.stringify(value) };
 }
