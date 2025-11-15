@@ -14,6 +14,7 @@ import type {
   AttackFeedback,
   Position,
   FeedbackStaus,
+  FinishGame,
 } from './types.ts';
 import WebSocket from 'ws';
 import {
@@ -23,10 +24,13 @@ import {
   sendResponse,
 } from './utils.ts';
 import { notifyRoom } from './rooms.ts';
+import { update_winners } from './winners.ts';
 
 const games = new Map<string | number, GameArea>(); // key = gameid value= { indexPlayer, ships }
 const whoIsShooting: Record<string | number, IsShooting[]> = {}; // gameId , players
 const shipsPositions = new Map<string | number, UserShips[]>(); // gameid , ships
+
+const shipsAmount: Record<string, number> = {}; //userId бcount of ships not destroyed
 
 export function createGame(user: RoomUser, gameId: string) {
   const socket = getSocketByName(user.name);
@@ -54,6 +58,7 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
     ...(shipsPositions.get(gameId) || []),
     makeCoordinates(request),
   ]);
+  shipsAmount[indexPlayer] = ships.length;
 
   if (!whoIsShooting[gameId]) {
     whoIsShooting[gameId] = [];
@@ -186,12 +191,18 @@ function makeAttack(
           updateShips(gameid, enemyId),
         );
         if (found) {
-          feedback(attackerId, target, 'shot');
-          if (destroyed) {
+          if (destroyed?.isKilled) {
             // destroyed.coordinates.forEach((c) => {
             //   feedback(attackerId, JSON.parse(c.coordinate), 'killed');
             // });
             feedback(attackerId, target, 'killed');
+            shipsAmount[enemyId] = shipsAmount[enemyId] - 1;
+            if (shipsAmount[enemyId] === 0) {
+              finishGame(attackerId);
+              return
+            }
+          } else {
+            feedback(attackerId, target, 'shot');
           }
           turnPlayer(attackerId, gameid);
         } else {
@@ -230,22 +241,24 @@ function isHit(
   positions: ShipPosition[],
   updater: ReturnType<typeof updateShips>,
 ) {
+  let destroyedShip: ShipPosition | null = null;
   const result: CheckResult = { found: false, destroyed: null };
   const updated: ShipPosition[] = [...positions].map((value) => {
     value.coordinates = value.coordinates.map((c) => {
       if (c.coordinate.includes(point)) {
         result.found = true;
         c.breaked = true;
+        destroyedShip = value;
       }
       return c;
     });
 
     if (value.coordinates.every((c) => c.breaked)) {
       value.isKilled = true;
-      result.destroyed = value;
     }
     return value;
   });
+  result.destroyed = destroyedShip
   updater(updated);
 
   return result;
@@ -265,4 +278,23 @@ function feedback(
     (user) => user.username,
   );
   if (names) notifyRoom(names, response);
+}
+
+function finishGame(winnerId: string | number) {
+  const response: FinishGame = {
+    type: 'finish',
+    data: { winPlayer: winnerId },
+    id: 0,
+  };
+
+  const game = getGameAreaOnIndex(winnerId);
+  const winnerName = game
+    ?.filter((value) => {
+      value.indexPlayer === winnerId;
+    })
+    .pop()?.username;
+
+  if (winnerName) update_winners(winnerName);
+  const names = getGameAreaOnIndex(winnerId)?.flatMap((user) => user.username);
+  if (names){ notifyRoom(names, response);}
 }

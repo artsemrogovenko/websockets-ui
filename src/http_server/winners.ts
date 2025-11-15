@@ -14,3 +14,9 @@ export function sendWinnersList() {
   };
   notifyAll(response);
 }
+
+export function update_winners(name: string) {
+  const wins = winners.get(name);
+ if( wins){ winners.set(name, wins + 1) }else{ winners.set(name, 1);}
+  sendWinnersList();
+}
