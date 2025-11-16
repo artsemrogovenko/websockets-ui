@@ -133,3 +133,29 @@ function packing(value: object): CoordinateState {
 export function newEvent(type: MyTypes.MessagesTypes, message: MessageEvent) {
   myEmitter.emit(type, { message: message });
 }
+
+export function edgeShip(positions: CoordinateState[]) {
+  const edges: MyTypes.Position[] = [...positions].flatMap((value) =>
+    fillEdge(JSON.parse(value.coordinate) as MyTypes.Position),
+  );
+  const shipCoordinates = positions.flatMap((value) => value.coordinate);
+  return edges.filter((edge) => {
+    return shipCoordinates.includes(JSON.stringify(edge)) === false;
+  });
+}
+
+function fillEdge(point: MyTypes.Position): MyTypes.Position[] {
+  const position: MyTypes.Position = { ...point };
+
+  return [
+    { x: position.x + 1, y: position.y },
+    { x: position.x, y: position.y + 1 },
+    { x: position.x, y: position.y - 1 },
+    { x: position.x - 1, y: position.y },
+
+    { x: position.x - 1, y: position.y - 1 },
+    { x: position.x + 1, y: position.y - 1 },
+    { x: position.x + 1, y: position.y + 1 },
+    { x: position.x - 1, y: position.y + 1 },
+  ];
+}

@@ -18,6 +18,7 @@ import type {
 } from './types.ts';
 import WebSocket from 'ws';
 import {
+  edgeShip,
   generateUuid,
   getRandomDigit,
   makeCoordinates,
@@ -203,9 +204,12 @@ function makeAttack(
         );
         if (found) {
           if (destroyed?.isKilled) {
-            // destroyed.coordinates.forEach((c) => {
-            //   feedback(attackerId, JSON.parse(c.coordinate), 'killed');
-            // });
+            destroyed.coordinates.forEach((value) =>
+              feedback(attackerId, JSON.parse(value.coordinate), 'killed'),
+            );
+            edgeShip(destroyed.coordinates).forEach((value) =>
+              feedback(attackerId, value, 'miss'),
+            );
             feedback(attackerId, target, 'killed');
             shipsAmount[enemyId] = shipsAmount[enemyId] - 1;
             if (shipsAmount[enemyId] === 0) {
