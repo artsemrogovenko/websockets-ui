@@ -32,7 +32,7 @@ function parser(data: RawData): MyTypes.ObjectMessage {
   if (!isMessageType(parsed)) {
     throw Error('Invalid format message');
   }
-  // console.log(parsed);
+  console.log(parsed);
   return {
     type: parsed.type,
     data: parsed.data ? JSON.parse(parsed.data) : parsed.data,
@@ -86,6 +86,7 @@ export function stringify(message: MyTypes.BaseMessage): string {
 
 export function sendResponse(message: MyTypes.BaseMessage, socket: WebSocket) {
   const response = stringify(message);
+  console.log(response);
   socket.send(response);
 }
 
