@@ -9,7 +9,13 @@ import type {
 import { sendResponse } from './utils.ts';
 import WebSocket from 'ws';
 import { sendWinnersList } from './winners.ts';
-import { BOT_NAME } from './constants.ts';
+import {
+  ACCEPTED,
+  BOT_NAME,
+  USER_IS_ONLINE,
+  WRONG_PASSWORD,
+} from './constants.ts';
+import { forceWinner } from './game.ts';
 
 export const sockets = new Map<string, WebSocket>(); // username, socket
 
@@ -23,18 +29,20 @@ export function login(auth: Auth, socket: WebSocket) {
   if (logins.has(name)) {
     const login = logins.get(name);
     const index = getIndex(name);
-    if (login?.isOnline) {
-      const result = resultAuth(
-        name,
-        index,
-        true,
-        'the user is already logged in',
-      );
+    if (
+      login?.isOnline ||
+      name.trim().toLowerCase() === BOT_NAME.toLowerCase()
+    ) {
+      const result = resultAuth(name, index, true, USER_IS_ONLINE);
       sendResponse(result, socket);
     } else {
       if (login?.password === password) {
         signIn(name, password, socket);
         const result = resultAuth(name, index);
+        sendResponse(result, socket);
+      } else {
+        const result = resultAuth(name, index, true, WRONG_PASSWORD);
+
         sendResponse(result, socket);
       }
     }
@@ -52,7 +60,7 @@ function resultAuth(
   name: string,
   index: number | string,
   error = false,
-  message = 'OK',
+  message = ACCEPTED,
 ): BaseMessage {
   return {
     type: 'reg',
@@ -75,6 +83,7 @@ function signOut(name: string) {
   if (login) {
     logins.set(name, { ...login, isOnline: false });
     sockets.delete(name);
+    forceWinner(name);
   }
 }
 

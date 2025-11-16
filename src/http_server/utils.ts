@@ -4,6 +4,7 @@ import { MessageCases } from './switcher.ts';
 import { v4 as uuidv4 } from 'uuid';
 import type { AddShips, CoordinateState, Ship, UserShips } from './types.ts';
 import EventEmitter from 'events';
+import { UNKNOWN_TYPE } from './constants.ts';
 
 type MessageEvent = {
   owner: string;
@@ -43,7 +44,7 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
   const parsed = parser(raw);
   const type = parsed.type;
   if (!Object.keys(MessageCases).includes(type)) {
-    console.error('Unknown type message', type);
+    console.error(UNKNOWN_TYPE, type);
   }
 
   switch (type) {

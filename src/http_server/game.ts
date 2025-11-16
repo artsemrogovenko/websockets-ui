@@ -27,7 +27,7 @@ import {
 } from './utils.ts';
 import { notifyRoom } from './rooms.ts';
 import { update_winners } from './winners.ts';
-import { BOT_NAME } from './constants.ts';
+import { BOT_NAME, NO_OWNER } from './constants.ts';
 
 const games = new Map<string | number, GameArea>(); // key = gameid value= { indexPlayer, ships }
 const whoIsShooting: Record<string | number, IsShooting[]> = {}; // gameId , players
@@ -205,24 +205,28 @@ function makeAttack(
         if (found) {
           if (destroyed?.isKilled) {
             destroyed.coordinates.forEach((value) =>
-              feedback(attackerId, JSON.parse(value.coordinate), 'killed'),
+              feedback(
+                attackerId,
+                JSON.parse(value.coordinate),
+                'killed',
+                attackerId,
+                gameid,
+              ),
             );
             edgeShip(destroyed.coordinates).forEach((value) =>
-              feedback(attackerId, value, 'miss'),
+              feedback(attackerId, value, 'miss', attackerId, gameid),
             );
-            feedback(attackerId, target, 'killed');
             shipsAmount[enemyId] = shipsAmount[enemyId] - 1;
             if (shipsAmount[enemyId] === 0) {
               finishGame(attackerId);
+              cleanUp(gameid);
               return;
             }
           } else {
-            feedback(attackerId, target, 'shot');
+            feedback(attackerId, target, 'shot', attackerId, gameid);
           }
-          turnPlayer(attackerId, gameid);
         } else {
-          feedback(attackerId, target, 'miss');
-          turnPlayer(enemyId, gameid);
+          feedback(attackerId, target, 'miss', enemyId, gameid);
         }
       }
     }
@@ -283,6 +287,8 @@ function feedback(
   currentPlayer: string | number,
   position: Position,
   status: FeedbackStaus,
+  nextUserId: string | number,
+  gameid: string | number,
 ) {
   const response: AttackFeedback = {
     type: 'attack',
@@ -293,6 +299,7 @@ function feedback(
     (user) => user.username,
   );
   if (names) notifyRoom(names, response);
+  turnPlayer(nextUserId, gameid);
 }
 
 function finishGame(winnerId: string | number) {
@@ -325,6 +332,31 @@ function getVipOwnerName(gameId: string | number) {
     .get(gameId)
     ?.filter((value) => value.username !== BOT_NAME)
     .pop()?.username;
-  if (!owner) throw Error('no find owner');
+  if (!owner) throw Error(NO_OWNER);
   return owner;
+}
+
+function cleanUp(gameId: string | number) {
+  games.delete(gameId);
+  delete whoIsShooting[gameId];
+  shipsPositions.delete(gameId);
+}
+
+export function forceWinner(leaver: string) {
+  let _gameId: string | number | undefined = undefined,
+    _winnerId: string | number | undefined = undefined;
+  for (const [gameId, gameArea] of games.entries()) {
+    const leaverObj = gameArea
+      .filter((value) => value.username === leaver)
+      .pop();
+    if (leaverObj) {
+      _gameId = gameId;
+      _winnerId = gameArea
+        .filter((area) => area.username !== leaverObj.username)
+        .pop()?.indexPlayer;
+    }
+  }
+
+  if (_winnerId) finishGame(_winnerId.toString());
+  if (_gameId) cleanUp(_gameId);
 }
