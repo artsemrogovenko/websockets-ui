@@ -87,7 +87,8 @@ export function handleShipsPosition(request: AddShips, socket?: WebSocket) {
       { indexPlayer: indexPlayer, ships: ships, username: _username },
     ]);
   }
-  if (_username !== BOT_NAME) newEvent('add_ships', gameId.toString());
+  if (_username !== BOT_NAME)
+    newEvent('add_ships', { owner: _username, gameId: gameId.toString() });
 }
 
 function startGame(gameId: string | number, gameArea: GameArea) {
@@ -130,6 +131,12 @@ function turnPlayer(indexPlayer: string | number, gameId: string | number) {
   const game = getGameAreaOnIndex(indexPlayer);
   const names = game?.flatMap((gameArea) => gameArea.username);
   if (names) notifyRoom(names, response);
+  const turnName = getNameByIndexPlayer(indexPlayer.toString());
+  if (turnName === BOT_NAME)
+    newEvent('attack', {
+      gameId: gameId.toString(),
+      owner: getVipOwnerName(gameId),
+    });
 }
 
 export function doRandomAttack(request: RandomAttack) {
@@ -301,4 +308,19 @@ function finishGame(winnerId: string | number) {
   if (names) {
     notifyRoom(names, response);
   }
+}
+
+function getNameByIndexPlayer(indexPlayer: string) {
+  return getGameAreaOnIndex(indexPlayer)
+    ?.filter((value) => value.indexPlayer === indexPlayer)
+    .pop()?.username;
+}
+
+function getVipOwnerName(gameId: string | number) {
+  const owner = games
+    .get(gameId)
+    ?.filter((value) => value.username !== BOT_NAME)
+    .pop()?.username;
+  if (!owner) throw Error('no find owner');
+  return owner;
 }

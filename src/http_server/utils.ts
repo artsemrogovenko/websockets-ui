@@ -5,8 +5,12 @@ import { v4 as uuidv4 } from 'uuid';
 import type { AddShips, CoordinateState, Ship, UserShips } from './types.ts';
 import EventEmitter from 'events';
 
+type MessageEvent = {
+  owner: string;
+  gameId: string;
+};
 export const myEmitter = new EventEmitter<{
-  [K in MyTypes.MessagesTypes]: [{ message: string }];
+  [K in MyTypes.MessagesTypes]: [{ message: MessageEvent }];
 }>();
 
 function isMessageType(obj: unknown): obj is MyTypes.RawMessage {
@@ -126,6 +130,6 @@ function packing(value: object): CoordinateState {
   return { breaked: false, coordinate: JSON.stringify(value) };
 }
 
-export function newEvent(type: MyTypes.MessagesTypes, message: string) {
+export function newEvent(type: MyTypes.MessagesTypes, message: MessageEvent) {
   myEmitter.emit(type, { message: message });
 }

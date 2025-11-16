@@ -9,10 +9,12 @@ import type {
 import { sendResponse } from './utils.ts';
 import WebSocket from 'ws';
 import { sendWinnersList } from './winners.ts';
+import { BOT_NAME } from './constants.ts';
 
 export const sockets = new Map<string, WebSocket>(); // username, socket
 
 const logins = new Map<string, Login>();
+logins.set(BOT_NAME, { isOnline: true, password: BOT_NAME });
 
 export function login(auth: Auth, socket: WebSocket) {
   const { name, password } = auth.data;
