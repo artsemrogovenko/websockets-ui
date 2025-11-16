@@ -21,10 +21,12 @@ import {
   generateUuid,
   getRandomDigit,
   makeCoordinates,
+  newEvent,
   sendResponse,
 } from './utils.ts';
 import { notifyRoom } from './rooms.ts';
 import { update_winners } from './winners.ts';
+import { BOT_NAME } from './constants.ts';
 
 const games = new Map<string | number, GameArea>(); // key = gameid value= { indexPlayer, ships }
 const whoIsShooting: Record<string | number, IsShooting[]> = {}; // gameId , players
@@ -49,10 +51,11 @@ export function createGame(user: RoomUser, gameId: string) {
   }
 }
 
-export function handleShipsPosition(request: AddShips, socket: WebSocket) {
+export function handleShipsPosition(request: AddShips, socket?: WebSocket) {
   const { data } = request;
   const { gameId, indexPlayer, ships } = data;
-  const _username = getNameBySocket(socket)?.name || '';
+  let _username = BOT_NAME;
+  if (socket) _username = getNameBySocket(socket)?.name || '';
 
   shipsPositions.set(gameId, [
     ...(shipsPositions.get(gameId) || []),
@@ -84,6 +87,7 @@ export function handleShipsPosition(request: AddShips, socket: WebSocket) {
       { indexPlayer: indexPlayer, ships: ships, username: _username },
     ]);
   }
+  if (_username !== BOT_NAME) newEvent('add_ships', gameId.toString());
 }
 
 function startGame(gameId: string | number, gameArea: GameArea) {
@@ -199,7 +203,7 @@ function makeAttack(
             shipsAmount[enemyId] = shipsAmount[enemyId] - 1;
             if (shipsAmount[enemyId] === 0) {
               finishGame(attackerId);
-              return
+              return;
             }
           } else {
             feedback(attackerId, target, 'shot');
@@ -258,7 +262,7 @@ function isHit(
     }
     return value;
   });
-  result.destroyed = destroyedShip
+  result.destroyed = destroyedShip;
   updater(updated);
 
   return result;
@@ -289,12 +293,12 @@ function finishGame(winnerId: string | number) {
 
   const game = getGameAreaOnIndex(winnerId);
   const winnerName = game
-    ?.filter((value) => {
-      value.indexPlayer === winnerId;
-    })
+    ?.filter((value) => value.indexPlayer === winnerId)
     .pop()?.username;
 
   if (winnerName) update_winners(winnerName);
   const names = getGameAreaOnIndex(winnerId)?.flatMap((user) => user.username);
-  if (names){ notifyRoom(names, response);}
+  if (names) {
+    notifyRoom(names, response);
+  }
 }

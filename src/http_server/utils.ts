@@ -3,6 +3,11 @@ import * as MyTypes from './types.ts';
 import { MessageCases } from './switcher.ts';
 import { v4 as uuidv4 } from 'uuid';
 import type { AddShips, CoordinateState, Ship, UserShips } from './types.ts';
+import EventEmitter from 'events';
+
+export const myEmitter = new EventEmitter<{
+  [K in MyTypes.MessagesTypes]: [{ message: string }];
+}>();
 
 function isMessageType(obj: unknown): obj is MyTypes.RawMessage {
   return (
@@ -41,24 +46,12 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     case 'reg':
       MessageCases.reg(parsed as MyTypes.Auth, socket);
       break;
-    // case 'update_winners':
-    //   MessageCases.reg(parsed as MyTypes.UpdateWinners, socket);
-    //   break;
     case 'create_room':
-      MessageCases.create_room(parsed as MyTypes.CreateRoom, socket);
+      MessageCases.create_room(socket);
       break;
     case 'add_user_to_room':
       MessageCases.add_user_to_room(parsed as MyTypes.InviteRoom, socket);
       break;
-    // case 'create_game':
-    //   MessageCases.create_game(parsed as MyTypes.CreateGame, socket);
-    //   break;
-    // case 'update_room':
-    //   MessageCases.update_room(parsed as MyTypes.UpdateRoom, socket);
-    //   break;
-    // case 'start_game':
-    //   MessageCases.reg(parsed as MyTypes.StartGame, socket);
-    //   break;
     case 'add_ships':
       MessageCases.add_ships(parsed as MyTypes.AddShips, socket);
       break;
@@ -68,13 +61,9 @@ export function handleMessage(raw: RawData, socket: WebSocket) {
     case 'randomAttack':
       MessageCases.randomAttack(parsed as MyTypes.RandomAttack, socket);
       break;
-    // case 'turn':
-    //   MessageCases.reg(parsed as MyTypes.PlayerTurn, socket);
-    //   break;
-    // case 'finish':
-    //   MessageCases.reg(parsed as MyTypes.FinishGame, socket);
-    //   break;
-
+    case 'single_play':
+      MessageCases.single_play(socket);
+      break;
     default:
       break;
   }
@@ -99,8 +88,8 @@ export function generateUuid() {
   return uuidv4();
 }
 
-export function getRandomDigit() {
-  return Math.floor(Math.random() * 10);
+export function getRandomDigit(value: number = 10) {
+  return Math.floor(Math.random() * value);
 }
 
 export function makeCoordinates(userGrid: AddShips): UserShips {
@@ -135,4 +124,8 @@ function computePoints(ship: Ship) {
 
 function packing(value: object): CoordinateState {
   return { breaked: false, coordinate: JSON.stringify(value) };
+}
+
+export function newEvent(type: MyTypes.MessagesTypes, message: string) {
+  myEmitter.emit(type, { message: message });
 }

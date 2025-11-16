@@ -1,8 +1,8 @@
 import type {
-  CreateRoom,
   InviteRoom,
   ObjectMessage,
   Room,
+  RoomUser,
   UpdateRoom,
 } from './types.ts';
 import WebSocket from 'ws';
@@ -12,8 +12,15 @@ import { generateUuid, sendResponse } from './utils.ts';
 
 const rooms = new Map<string, Room>();
 let counter = 0;
+export function currentRoomId(): number {
+  const result = counter;
+  return result;
+}
+export function addBotToRoom(userName: string, roomId: string, bot: RoomUser) {
+  rooms.set(userName, { roomId: roomId, roomUsers: [bot] });
+}
 
-export function createRoom(_: CreateRoom, socket: WebSocket) {
+export function createRoom(socket: WebSocket) {
   const user = getNameBySocket(socket);
   if (user && !rooms.has(user.name)) {
     rooms.set(user.name, {
@@ -32,20 +39,30 @@ export function sendRoomsList() {
   notifyAll(response);
 }
 
-function enterRoom(roomId: number | string, socket: WebSocket) {
+export function enterRoom(
+  roomId: number | string,
+  socket: WebSocket,
+  withBot?: boolean,
+) {
   const user = getNameBySocket(socket);
-  let key = '';
+  let key = user?.name || '';
   if (user) {
-    rooms.delete(user.name);
-    for (const [owner, room] of rooms.entries()) {
-      if (roomId === room.roomId) {
-        if (owner !== user.name) {
-          key = owner;
-          rooms.set(owner, { ...room, roomUsers: [...room.roomUsers, user] });
+    if (!withBot) {
+      rooms.delete(user.name);
+      for (const [owner, room] of rooms.entries()) {
+        if (roomId === room.roomId) {
+          if (owner !== user.name) {
+            key = owner;
+            rooms.set(owner, { ...room, roomUsers: [...room.roomUsers, user] });
+          }
         }
       }
+      sendRoomsList();
+    } else {
+      const room = rooms.get(user.name);
+      if (room)
+        rooms.set(user.name, { ...room, roomUsers: [...room.roomUsers, user] });
     }
-    sendRoomsList();
   }
   const usersInRoom = rooms.get(key);
 

@@ -17,7 +17,8 @@ export type ObjectMessage =
   | AttackFeedback
   | RandomAttack
   | PlayerTurn
-  | FinishGame;
+  | FinishGame
+  | SinglePlay;
 
 export type MessagesTypes =
   | 'reg'
@@ -31,7 +32,8 @@ export type MessagesTypes =
   | 'attack'
   | 'randomAttack'
   | 'turn'
-  | 'finish';
+  | 'finish'
+  | 'single_play';
 
 export type RawMessage = {
   type: MessagesTypes;
@@ -71,6 +73,10 @@ export interface UpdateWinners extends BaseMessage {
 }
 export interface CreateRoom extends BaseMessage {
   type: 'create_room';
+  data: '';
+}
+export interface SinglePlay extends BaseMessage {
+  type: 'single_play';
   data: '';
 }
 export interface InviteRoom extends BaseMessage {
