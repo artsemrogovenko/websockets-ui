@@ -117,7 +117,11 @@ function getGameAreaOnIndex(indexPlayer: string | number) {
     .pop();
 }
 
-function turnPlayer(indexPlayer: string | number, gameId: string | number) {
+function turnPlayer(
+  indexPlayer: string | number,
+  gameId: string | number,
+  isNotFill = true,
+) {
   const players = whoIsShooting[gameId];
   whoIsShooting[gameId] = players.map((player) => {
     player.thutly = player.indexPlayer === indexPlayer;
@@ -133,7 +137,7 @@ function turnPlayer(indexPlayer: string | number, gameId: string | number) {
   const names = game?.flatMap((gameArea) => gameArea.username);
   if (names) notifyRoom(names, response);
   const turnName = getNameByIndexPlayer(indexPlayer.toString());
-  if (turnName === BOT_NAME)
+  if (turnName === BOT_NAME && isNotFill)
     newEvent('attack', {
       gameId: gameId.toString(),
       owner: getVipOwnerName(gameId),
@@ -158,14 +162,17 @@ export function handleAttack(request: Attack) {
   const { data } = request;
   const attackerId = data.indexPlayer;
   const gameid = data.gameId;
+  try {
+    const enemyId = whoIsShooting[gameid]
+      .filter((id) => id.indexPlayer !== attackerId)
+      .pop()?.indexPlayer;
 
-  const enemyId = whoIsShooting[gameid]
-    .filter((id) => id.indexPlayer !== attackerId)
-    .pop()?.indexPlayer;
-
-  const x = data.x;
-  const y = data.y;
-  if (enemyId) makeAttack(x, y, enemyId, attackerId, gameid);
+    const x = data.x;
+    const y = data.y;
+    if (enemyId) makeAttack(x, y, enemyId, attackerId, gameid);
+  } catch {
+    console.error('no gameid found');
+  }
 }
 
 function makeAttack(
@@ -211,10 +218,11 @@ function makeAttack(
                 'killed',
                 attackerId,
                 gameid,
+                false,
               ),
             );
             edgeShip(destroyed.coordinates).forEach((value) =>
-              feedback(attackerId, value, 'miss', attackerId, gameid),
+              feedback(attackerId, value, 'miss', attackerId, gameid, false),
             );
             shipsAmount[enemyId] = shipsAmount[enemyId] - 1;
             if (shipsAmount[enemyId] === 0) {
@@ -222,6 +230,7 @@ function makeAttack(
               cleanUp(gameid);
               return;
             }
+            turnPlayer(attackerId, gameid);
           } else {
             feedback(attackerId, target, 'shot', attackerId, gameid);
           }
@@ -289,6 +298,7 @@ function feedback(
   status: FeedbackStaus,
   nextUserId: string | number,
   gameid: string | number,
+  notFillEdge = true,
 ) {
   const response: AttackFeedback = {
     type: 'attack',
@@ -299,10 +309,10 @@ function feedback(
     (user) => user.username,
   );
   if (names) notifyRoom(names, response);
-  turnPlayer(nextUserId, gameid);
+  turnPlayer(nextUserId, gameid, notFillEdge);
 }
 
-function finishGame(winnerId: string | number) {
+export function finishGame(winnerId: string | number) {
   const response: FinishGame = {
     type: 'finish',
     data: { winPlayer: winnerId },

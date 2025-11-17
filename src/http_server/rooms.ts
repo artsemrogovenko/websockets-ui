@@ -48,7 +48,7 @@ export function enterRoom(
   let key = user?.name || '';
   if (user) {
     if (!withBot) {
-      rooms.delete(user.name);
+      deleteRoom(user.name);
       for (const [owner, room] of rooms.entries()) {
         if (roomId === room.roomId) {
           if (owner !== user.name) {
@@ -100,4 +100,8 @@ export function notifyRoomByOwnerName(owner: string, message: ObjectMessage) {
     const socket = getSocketByName(user.name);
     if (socket) sendResponse(message, socket);
   });
+}
+
+export function deleteRoom(username: string) {
+  rooms.delete(username);
 }

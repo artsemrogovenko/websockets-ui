@@ -1,7 +1,7 @@
 import WebSocket, { type RawData } from 'ws';
 import * as MyTypes from './types.ts';
 import { MessageCases } from './switcher.ts';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import type { AddShips, CoordinateState, Ship, UserShips } from './types.ts';
 import EventEmitter from 'events';
 import { UNKNOWN_TYPE } from './constants.ts';
@@ -91,7 +91,7 @@ export function sendResponse(message: MyTypes.BaseMessage, socket: WebSocket) {
 }
 
 export function generateUuid() {
-  return uuidv4();
+  return randomUUID().toString();
 }
 
 export function getRandomDigit(value: number = 10) {

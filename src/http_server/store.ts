@@ -1,4 +1,4 @@
-import { sendRoomsList } from './rooms.ts';
+import { deleteRoom, sendRoomsList } from './rooms.ts';
 import type {
   Auth,
   BaseMessage,
@@ -84,6 +84,8 @@ function signOut(name: string) {
     logins.set(name, { ...login, isOnline: false });
     sockets.delete(name);
     forceWinner(name);
+    deleteRoom(name);
+    sendRoomsList();
   }
 }
 
