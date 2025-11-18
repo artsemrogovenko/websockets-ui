@@ -25,7 +25,7 @@ import {
   newEvent,
   sendResponse,
 } from './utils.ts';
-import { notifyRoom } from './rooms.ts';
+import { deleteRoom, notifyRoom } from './rooms.ts';
 import { update_winners } from './winners.ts';
 import { BOT_NAME, NO_OWNER } from './constants.ts';
 
@@ -324,10 +324,13 @@ export function finishGame(winnerId: string | number) {
     ?.filter((value) => value.indexPlayer === winnerId)
     .pop()?.username;
 
-  if (winnerName) update_winners(winnerName);
   const names = getGameAreaOnIndex(winnerId)?.flatMap((user) => user.username);
   if (names) {
     notifyRoom(names, response);
+  }
+  if (winnerName) {
+    update_winners(winnerName);
+    deleteRoom(winnerName);
   }
 }
 
