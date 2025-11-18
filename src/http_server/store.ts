@@ -1,0 +1,116 @@
+import { deleteRoom, sendRoomsList } from './rooms.ts';
+import type {
+  Auth,
+  BaseMessage,
+  Login,
+  ObjectMessage,
+  RoomUser,
+} from './types';
+import { sendResponse } from './utils.ts';
+import WebSocket from 'ws';
+import { sendWinnersList } from './winners.ts';
+import {
+  ACCEPTED,
+  BOT_NAME,
+  USER_IS_ONLINE,
+  WRONG_PASSWORD,
+} from './constants.ts';
+import { forceWinner } from './game.ts';
+
+export const sockets = new Map<string, WebSocket>(); // username, socket
+
+const logins = new Map<string, Login>();
+logins.set(BOT_NAME, { isOnline: true, password: BOT_NAME });
+
+export function login(auth: Auth, socket: WebSocket) {
+  const { name, password } = auth.data;
+  socket.on('close', () => signOut(name));
+
+  if (logins.has(name)) {
+    const login = logins.get(name);
+    const index = getIndex(name);
+    if (
+      login?.isOnline ||
+      name.trim().toLowerCase() === BOT_NAME.toLowerCase()
+    ) {
+      const result = resultAuth(name, index, true, USER_IS_ONLINE);
+      sendResponse(result, socket);
+    } else {
+      if (login?.password === password) {
+        signIn(name, password, socket);
+        const result = resultAuth(name, index);
+        sendResponse(result, socket);
+      } else {
+        const result = resultAuth(name, index, true, WRONG_PASSWORD);
+
+        sendResponse(result, socket);
+      }
+    }
+    return;
+  } else {
+    signIn(name, password, socket);
+    const index = getIndex(name);
+    const result = resultAuth(name, index);
+
+    sendResponse(result, socket);
+  }
+}
+
+function resultAuth(
+  name: string,
+  index: number | string,
+  error = false,
+  message = ACCEPTED,
+): BaseMessage {
+  return {
+    type: 'reg',
+    data: {
+      name: name,
+      index: index,
+      error: error,
+      errorText: message,
+    },
+    id: 0,
+  };
+}
+
+function getIndex(name: string) {
+  return [...logins.keys()].indexOf(name);
+}
+
+function signOut(name: string) {
+  const login = logins.get(name);
+  if (login) {
+    logins.set(name, { ...login, isOnline: false });
+    sockets.delete(name);
+    forceWinner(name);
+    deleteRoom(name);
+    sendRoomsList();
+  }
+}
+
+function signIn(name: string, password: string, socket: WebSocket) {
+  logins.set(name, { isOnline: true, password: password });
+  sockets.set(name, socket);
+  sendRoomsList();
+  sendWinnersList();
+}
+
+export function getNameBySocket(ws: WebSocket): RoomUser | null {
+  for (const [name, socket] of sockets.entries()) {
+    if (socket === ws) {
+      return { index: getIndex(name), name: name };
+    }
+  }
+  return null;
+}
+
+export async function notifyAll(message: ObjectMessage) {
+  for (const element of sockets.values()) {
+    sendResponse(message, element);
+  }
+}
+
+export function getSocketByName(name: string) {
+  return sockets.get(name);
+}
